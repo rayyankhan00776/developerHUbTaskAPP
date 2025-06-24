@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'package:client/core/themes/pallete.dart';
 import 'package:client/features/profile/bloc/profile_bloc.dart';
@@ -6,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CreatePostWidget extends StatefulWidget {
-  const CreatePostWidget({Key? key}) : super(key: key);
+  const CreatePostWidget({super.key});
 
   @override
   State<CreatePostWidget> createState() => _CreatePostWidgetState();
@@ -178,7 +180,7 @@ class _CreatePostWidgetState extends State<CreatePostWidget> {
                       : const Text(
                         'Post',
                         style: TextStyle(
-                          color: Colors.blue,
+                          color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -198,12 +200,30 @@ class _CreatePostWidgetState extends State<CreatePostWidget> {
                     // Content Input
                     TextField(
                       controller: _contentController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: "What's on your mind?",
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(fontSize: 18, color: Colors.grey),
+                        hintStyle: const TextStyle(color: Colors.black54),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: const BorderSide(color: Colors.green),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
                       ),
-                      style: const TextStyle(fontSize: 18),
+                      style: const TextStyle(fontSize: 15, color: Colors.black),
                       maxLines: null,
                       textCapitalization: TextCapitalization.sentences,
                     ),
@@ -212,16 +232,46 @@ class _CreatePostWidgetState extends State<CreatePostWidget> {
 
                     // Selected Image Preview
                     if (_selectedImage != null)
-                      Container(
-                        width: double.infinity,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => Scaffold(
+                                    backgroundColor: Colors.black,
+                                    body: GestureDetector(
+                                      onTap: () => Navigator.of(context).pop(),
+                                      child: Center(
+                                        child: Hero(
+                                          tag: _selectedImage!.path,
+                                          child: Image.file(
+                                            _selectedImage!,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                            ),
+                          );
+                        },
+                        child: Hero(
+                          tag: _selectedImage!.path,
+                          child: Container(
+                            width: double.infinity,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                _selectedImage!,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -246,7 +296,7 @@ class _CreatePostWidgetState extends State<CreatePostWidget> {
                   const Text(
                     'Add Photo',
                     style: TextStyle(
-                      color: Colors.green,
+                      color: Colors.black,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

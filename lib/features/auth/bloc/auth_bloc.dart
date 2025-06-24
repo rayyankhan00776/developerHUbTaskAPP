@@ -23,6 +23,18 @@ class ChangePasswordEvent extends AuthEvent {
   ChangePasswordEvent(this.email, this.currentPassword, this.newPassword);
 }
 
+class ForgotPasswordSendCodeEvent extends AuthEvent {
+  final String email;
+  ForgotPasswordSendCodeEvent(this.email);
+}
+
+class ForgotPasswordVerifyCodeEvent extends AuthEvent {
+  final String email;
+  final String code;
+  final String newPassword;
+  ForgotPasswordVerifyCodeEvent(this.email, this.code, this.newPassword);
+}
+
 // States
 abstract class AuthState {}
 
@@ -33,6 +45,10 @@ class AuthLoading extends AuthState {}
 class AuthSuccess extends AuthState {}
 
 class PasswordChangeSuccess extends AuthState {}
+
+class ForgotPasswordCodeSent extends AuthState {}
+
+class ForgotPasswordSuccess extends AuthState {}
 
 class AuthFailure extends AuthState {
   final String message;
@@ -76,6 +92,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           event.newPassword,
         );
         emit(PasswordChangeSuccess());
+        emit(AuthInitial());
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
+        emit(AuthInitial());
+      }
+    });
+
+    on<ForgotPasswordSendCodeEvent>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        await repository.forgotPasswordSendCode(event.email);
+        emit(ForgotPasswordCodeSent());
+        emit(AuthInitial());
+      } catch (e) {
+        emit(AuthFailure(e.toString()));
+        emit(AuthInitial());
+      }
+    });
+
+    on<ForgotPasswordVerifyCodeEvent>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        await repository.forgotPasswordVerifyCode(
+          event.email,
+          event.code,
+          event.newPassword,
+        );
+        emit(ForgotPasswordSuccess());
         emit(AuthInitial());
       } catch (e) {
         emit(AuthFailure(e.toString()));

@@ -9,11 +9,11 @@ class PostCommentsWidget extends StatefulWidget {
   final Function(String) onAddComment;
 
   const PostCommentsWidget({
-    Key? key,
+    super.key,
     required this.comments,
     required this.postId,
     required this.onAddComment,
-  }) : super(key: key);
+  });
 
   @override
   State<PostCommentsWidget> createState() => _PostCommentsWidgetState();
@@ -71,98 +71,113 @@ class _PostCommentsWidgetState extends State<PostCommentsWidget> {
               ],
             ),
           ),
-          
+
           // Comments List
           Expanded(
-            child: widget.comments.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.comment_outlined,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'No comments yet',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Be the first to comment!',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: widget.comments.length,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemBuilder: (context, index) {
-                      final comment = widget.comments[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+            child:
+                widget.comments.isEmpty
+                    ? const Center(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.grey,
-                              child: Icon(
-                                Icons.person,
-                                size: 20,
-                                color: Colors.white,
+                            Icon(
+                              Icons.comment_outlined,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'No comments yet',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        comment.userName ?? 'Anonymous',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                          color: Pallete.blackColor,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        timeago.format(comment.createdAt),
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    comment.text,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Pallete.blackColor,
-                                    ),
-                                  ),
-                                ],
+                            SizedBox(height: 8),
+                            Text(
+                              'Be the first to comment!',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    )
+                    : ListView.builder(
+                      itemCount: widget.comments.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemBuilder: (context, index) {
+                        final comment = widget.comments[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundColor: Colors.grey[300],
+                                backgroundImage:
+                                    comment.profilePicUrl != null &&
+                                            comment.profilePicUrl!.isNotEmpty
+                                        ? NetworkImage(comment.profilePicUrl!)
+                                        : null,
+                                child:
+                                    (comment.profilePicUrl == null ||
+                                            comment.profilePicUrl!.isEmpty)
+                                        ? const Icon(
+                                          Icons.person,
+                                          size: 20,
+                                          color: Colors.white,
+                                        )
+                                        : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          comment.userName != null &&
+                                                  comment.userName!.isNotEmpty
+                                              ? comment.userName!
+                                              : 'Unknown User',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: Pallete.blackColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          timeago.format(comment.createdAt),
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      comment.text,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Pallete.blackColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
           ),
 
           // Comment Input
@@ -184,19 +199,28 @@ class _PostCommentsWidgetState extends State<PostCommentsWidget> {
                     controller: _commentController,
                     decoration: InputDecoration(
                       hintText: 'Add a comment...',
+                      hintStyle: const TextStyle(color: Colors.black54),
                       border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
                         borderSide: BorderSide(color: Colors.grey[300]!),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(color: Colors.blue),
+                        borderSide: const BorderSide(color: Colors.green),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 10,
                       ),
+                      isDense: true,
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
+                    style: const TextStyle(color: Colors.black, fontSize: 15),
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
                   ),
@@ -211,7 +235,7 @@ class _PostCommentsWidgetState extends State<PostCommentsWidget> {
                     }
                   },
                   icon: const Icon(Icons.send),
-                  color: Colors.blue,
+                  color: Colors.green,
                 ),
               ],
             ),

@@ -29,12 +29,9 @@ class ProfileRepository {
         final Map<String, dynamic> data = json.decode(response.body);
         return ProfileModel.fromJson(data);
       } else {
-        print('Profile response status: ${response.statusCode}');
-        print('Profile response body: ${response.body}');
         throw Exception('Failed to load profile: ${response.body}');
       }
     } catch (e) {
-      print('Profile error details: $e');
       throw Exception('Error fetching profile: $e');
     }
   }
@@ -70,12 +67,9 @@ class ProfileRepository {
         final Map<String, dynamic> data = json.decode(responseBody);
         return data['profile_pic_url'];
       } else {
-        print('Update profile pic status: ${response.statusCode}');
-        print('Update profile pic body: $responseBody');
         throw Exception('Failed to update profile picture: $responseBody');
       }
     } catch (e) {
-      print('Update profile pic error: $e');
       throw Exception('Error updating profile picture: $e');
     }
   }
@@ -100,12 +94,9 @@ class ProfileRepository {
       );
 
       if (response.statusCode != 200) {
-        print('Delete profile pic status: ${response.statusCode}');
-        print('Delete profile pic body: ${response.body}');
         throw Exception('Failed to delete profile picture: ${response.body}');
       }
     } catch (e) {
-      print('Delete profile pic error: $e');
       throw Exception('Error deleting profile picture: $e');
     }
   }
@@ -157,12 +148,9 @@ class ProfileRepository {
         };
         return Post.fromJson(postData);
       } else {
-        print('Create post status: ${response.statusCode}');
-        print('Create post body: $responseBody');
         throw Exception('Failed to create post: $responseBody');
       }
     } catch (e) {
-      print('Create post error: $e');
       throw Exception('Error creating post: $e');
     }
   }
@@ -190,12 +178,9 @@ class ProfileRepository {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => Post.fromJson(json)).toList();
       } else {
-        print('Get posts status: ${response.statusCode}');
-        print('Get posts body: ${response.body}');
         throw Exception('Failed to load posts: ${response.body}');
       }
     } catch (e) {
-      print('Get posts error: $e');
       throw Exception('Error fetching posts: $e');
     }
   }
@@ -223,12 +208,9 @@ class ProfileRepository {
         final responseData = json.decode(response.body);
         return responseData['liked'];
       } else {
-        print('Like post status: ${response.statusCode}');
-        print('Like post body: ${response.body}');
         throw Exception('Failed to like post: ${response.body}');
       }
     } catch (e) {
-      print('Like post error: $e');
       throw Exception('Error liking post: $e');
     }
   }
@@ -255,16 +237,12 @@ class ProfileRepository {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        // Add user_name as "You" for current user's comments
-        data['user_name'] = 'You';
+        // Use the user_name from backend response, do not override
         return Comment.fromJson(data);
       } else {
-        print('Add comment status: ${response.statusCode}');
-        print('Add comment body: ${response.body}');
         throw Exception('Failed to add comment: ${response.body}');
       }
     } catch (e) {
-      print('Add comment error: $e');
       throw Exception('Error adding comment: $e');
     }
   }
@@ -292,13 +270,123 @@ class ProfileRepository {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => Comment.fromJson(json)).toList();
       } else {
-        print('Get comments status: ${response.statusCode}');
-        print('Get comments body: ${response.body}');
         throw Exception('Failed to load comments: ${response.body}');
       }
     } catch (e) {
-      print('Get comments error: $e');
       throw Exception('Error fetching comments: $e');
+    }
+  }
+
+  // Get current user's followers
+  Future<List<Map<String, dynamic>>> getFollowers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) throw Exception('No authentication token found');
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/followers'),
+      headers: {
+        'x-auth-token': token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load followers: ${response.body}');
+    }
+  }
+
+  // Get current user's following
+  Future<List<Map<String, dynamic>>> getFollowing() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) throw Exception('No authentication token found');
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/following'),
+      headers: {
+        'x-auth-token': token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Failed to load following: ${response.body}');
+    }
+  }
+
+  // Follow/unfollow a user
+  Future<bool> followUser(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token == null) throw Exception('No authentication token found');
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/follow/$userId'),
+      headers: {
+        'x-auth-token': token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['following'] == true;
+    } else {
+      throw Exception('Failed to follow/unfollow user: ${response.body}');
+    }
+  }
+
+  // Delete a post
+  Future<void> deletePost(String postId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+      final response = await http.delete(
+        Uri.parse('$baseUrl/media/posts/$postId'),
+        headers: {'x-auth-token': token},
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete post: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error deleting post: $e');
+    }
+  }
+
+  // Update a post
+  Future<Post> updatePost({
+    required String postId,
+    String? content,
+    String? mediaUrl,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+      final response = await http.put(
+        Uri.parse('$baseUrl/media/posts/$postId'),
+        headers: {'x-auth-token': token, 'Content-Type': 'application/json'},
+        body: json.encode({
+          if (content != null) 'content': content,
+          if (mediaUrl != null) 'media_url': mediaUrl,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        // The updated post is in data['post']
+        return Post.fromJson(data['post']);
+      } else {
+        throw Exception('Failed to update post: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating post: $e');
     }
   }
 }

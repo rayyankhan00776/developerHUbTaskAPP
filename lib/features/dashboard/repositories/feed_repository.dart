@@ -25,8 +25,6 @@ class FeedRepository {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => Post.fromJson(json)).toList();
       } else {
-        print('Response status: ${response.statusCode}');
-        print('Response body: ${response.body}');
         if (response.statusCode == 422) {
           throw Exception('Invalid request format: ${response.body}');
         } else {
@@ -34,7 +32,6 @@ class FeedRepository {
         }
       }
     } catch (e) {
-      print('Error details: $e');
       throw Exception('Error fetching feed posts: $e');
     }
   }
@@ -47,7 +44,6 @@ class FeedRepository {
       if (token == null) {
         throw Exception('No authentication token found');
       }
-      print('Attempting to like post with ID: $postId');
       final response = await http.post(
         Uri.parse(
           '$baseUrl/media/posts/$postId/like',
@@ -59,15 +55,12 @@ class FeedRepository {
         },
       );
       if (response.statusCode != 200) {
-        print('Like response status: ${response.statusCode}');
-        print('Like response body: ${response.body}');
         throw Exception('Failed to like post: ${response.body}');
       }
 
       final responseData = json.decode(response.body);
       return responseData['liked']; // Returns true if liked, false if unliked
     } catch (e) {
-      print('Like error details: $e');
       throw Exception('Error liking post: $e');
     }
   }
@@ -80,7 +73,6 @@ class FeedRepository {
       if (token == null) {
         throw Exception('No authentication token found');
       }
-      print('Attempting to add comment to post with ID: $postId');
       final response = await http.post(
         Uri.parse('$baseUrl/media/posts/$postId/comments'),
         headers: {
@@ -91,8 +83,6 @@ class FeedRepository {
         body: json.encode({'text': comment}),
       );
       if (response.statusCode != 200) {
-        print('Comment response status: ${response.statusCode}');
-        print('Comment response body: ${response.body}');
         throw Exception('Failed to add comment: ${response.body}');
       }
       final responseData = json.decode(response.body) as Map<String, dynamic>;
@@ -107,7 +97,6 @@ class FeedRepository {
 
       return modifiedResponse;
     } catch (e) {
-      print('Comment error details: $e');
       throw Exception('Failed to add comment');
     }
   }

@@ -4,6 +4,8 @@ class ProfileModel {
   final String email;
   final String? profilePicUrl;
   final List<Post> posts;
+  final int followersCount;
+  final int followingCount;
 
   ProfileModel({
     required this.id,
@@ -11,6 +13,8 @@ class ProfileModel {
     required this.email,
     this.profilePicUrl,
     required this.posts,
+    required this.followersCount,
+    required this.followingCount,
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
@@ -19,10 +23,13 @@ class ProfileModel {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       profilePicUrl: json['profile_pic_url'],
-      posts: (json['posts'] as List<dynamic>?)
+      posts:
+          (json['posts'] as List<dynamic>?)
               ?.map((postJson) => Post.fromJson(postJson))
               .toList() ??
           [],
+      followersCount: json['followers_count'] ?? 0,
+      followingCount: json['following_count'] ?? 0,
     );
   }
 
@@ -33,6 +40,8 @@ class ProfileModel {
       'email': email,
       'profile_pic_url': profilePicUrl,
       'posts': posts.map((post) => post.toJson()).toList(),
+      'followers_count': followersCount,
+      'following_count': followingCount,
     };
   }
 
@@ -42,6 +51,8 @@ class ProfileModel {
     String? email,
     String? profilePicUrl,
     List<Post>? posts,
+    int? followersCount,
+    int? followingCount,
   }) {
     return ProfileModel(
       id: id ?? this.id,
@@ -49,6 +60,8 @@ class ProfileModel {
       email: email ?? this.email,
       profilePicUrl: profilePicUrl ?? this.profilePicUrl,
       posts: posts ?? this.posts,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
     );
   }
 }
@@ -61,6 +74,7 @@ class Post {
   final int totalLikes;
   final bool likedByUser;
   final List<Comment> comments;
+  final String? profilePicUrl;
 
   Post({
     required this.id,
@@ -70,20 +84,26 @@ class Post {
     required this.totalLikes,
     required this.likedByUser,
     required this.comments,
+    this.profilePicUrl,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
+    // Debug print to see what backend returns
     return Post(
       id: json['id'] ?? '',
       content: json['content'],
       mediaUrl: json['media_url'],
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
       totalLikes: json['total_likes'] ?? 0,
-      likedByUser: json['liked_by_user'] ?? false,
-      comments: (json['comments'] as List<dynamic>?)
+      likedByUser: json['liked_by_user'] ?? json['likedByUser'] ?? false,
+      comments:
+          (json['comments'] as List<dynamic>?)
               ?.map((commentJson) => Comment.fromJson(commentJson))
               .toList() ??
           [],
+      profilePicUrl: json['profile_pic_url'],
     );
   }
 
@@ -96,6 +116,7 @@ class Post {
       'total_likes': totalLikes,
       'liked_by_user': likedByUser,
       'comments': comments.map((comment) => comment.toJson()).toList(),
+      'profile_pic_url': profilePicUrl,
     };
   }
 
@@ -107,6 +128,7 @@ class Post {
     int? totalLikes,
     bool? likedByUser,
     List<Comment>? comments,
+    String? profilePicUrl,
   }) {
     return Post(
       id: id ?? this.id,
@@ -116,6 +138,7 @@ class Post {
       totalLikes: totalLikes ?? this.totalLikes,
       likedByUser: likedByUser ?? this.likedByUser,
       comments: comments ?? this.comments,
+      profilePicUrl: profilePicUrl ?? this.profilePicUrl,
     );
   }
 }
@@ -125,6 +148,7 @@ class Comment {
   final String text;
   final String userId;
   final String? userName;
+  final String? profilePicUrl;
   final DateTime createdAt;
 
   Comment({
@@ -132,6 +156,7 @@ class Comment {
     required this.text,
     required this.userId,
     this.userName,
+    this.profilePicUrl,
     required this.createdAt,
   });
 
@@ -141,7 +166,10 @@ class Comment {
       text: json['text'] ?? '',
       userId: json['user_id'] ?? '',
       userName: json['user_name'],
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      profilePicUrl: json['profile_pic_url'],
+      createdAt: DateTime.parse(
+        json['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 
@@ -151,6 +179,7 @@ class Comment {
       'text': text,
       'user_id': userId,
       'user_name': userName,
+      'profile_pic_url': profilePicUrl,
       'created_at': createdAt.toIso8601String(),
     };
   }

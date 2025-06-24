@@ -4,6 +4,7 @@ import 'post_comments_widget.dart';
 import '../../../../core/themes/pallete.dart';
 import '../../bloc/feed_bloc.dart';
 import '../../models/post.dart';
+import 'package:client/features/other_user_profile/view/pages/other_user_profile_page.dart';
 
 class FeedPostWidget extends StatelessWidget {
   final Post post;
@@ -31,36 +32,61 @@ class FeedPostWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.13),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // User Info Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage:
-                      post.profilePicUrl != null
-                          ? NetworkImage(post.profilePicUrl!)
-                          : null,
-                  child:
-                      post.profilePicUrl == null
-                          ? const Icon(Icons.person, color: Colors.grey)
-                          : null,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  post.userName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Pallete.blackColor,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OtherUserProfilePage(userId: post.userId),
                   ),
-                ),
-              ],
+                );
+              },
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage:
+                        post.profilePicUrl != null &&
+                                post.profilePicUrl!.isNotEmpty
+                            ? NetworkImage(post.profilePicUrl!)
+                            : null,
+                    child:
+                        (post.profilePicUrl == null ||
+                                post.profilePicUrl!.isEmpty)
+                            ? const Icon(Icons.person, color: Colors.grey)
+                            : null,
+                  ),
+                  const SizedBox(width: 10),
+
+                  Text(
+                    post.userName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Pallete.blackColor,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ), // Post Image
           if (post.mediaUrl != null)

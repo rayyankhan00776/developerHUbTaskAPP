@@ -1,11 +1,16 @@
+// ignore_for_file: deprecated_member_use
+
+import 'package:client/features/auth/view/pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/themes/pallete.dart';
 import '../../models/profile_model.dart';
 import '../../bloc/profile_bloc.dart';
 import '../widgets/create_post.widget.dart';
 import '../widgets/profile_header_widget.dart';
 import '../widgets/profile_post_widget.dart';
+import 'followers_following_list_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -56,10 +61,28 @@ class _ProfilePageState extends State<ProfilePage> {
           icon: const Icon(Icons.arrow_back, color: Pallete.blackColor),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Pallete.blackColor),
+            tooltip: 'Logout',
+            onPressed: () async {
+              // Clear shared preferences
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              // Navigate to LoginPage and remove all previous routes
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreatePost,
-        backgroundColor: Pallete.gradient3,
+        backgroundColor: Pallete.greenColor,
         child: const Icon(Icons.add),
       ),
       body: BlocConsumer<ProfileBloc, ProfileState>(
@@ -114,7 +137,101 @@ class _ProfilePageState extends State<ProfilePage> {
                   // Profile Header with loading overlay if needed
                   Stack(
                     children: [
-                      ProfileHeaderWidget(profile: profile),
+                      ProfileHeaderWidget(
+                        profile: profile,
+                        onFollowersTap: () async {
+                          context.read<ProfileBloc>().add(LoadFollowersEvent());
+                          final state = await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (
+                                    context,
+                                  ) => BlocBuilder<ProfileBloc, ProfileState>(
+                                    builder: (context, state) {
+                                      if (state is FollowersLoaded) {
+                                        final users =
+                                            state.followers
+                                                .map(
+                                                  (e) =>
+                                                      ProfileModel.fromJson(e),
+                                                )
+                                                .toList();
+                                        return FollowersFollowingListPage(
+                                          title: 'Followers',
+                                          users: users,
+                                        );
+                                      } else if (state is ProfileLoading) {
+                                        return const Scaffold(
+                                          body: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      } else if (state is ProfileError) {
+                                        return Scaffold(
+                                          body: Center(
+                                            child: Text(
+                                              'Error: \\${state.message}',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return const Scaffold(
+                                        body: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                            ),
+                          );
+                        },
+                        onFollowingTap: () async {
+                          context.read<ProfileBloc>().add(LoadFollowingEvent());
+                          final state = await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder:
+                                  (
+                                    context,
+                                  ) => BlocBuilder<ProfileBloc, ProfileState>(
+                                    builder: (context, state) {
+                                      if (state is FollowingLoaded) {
+                                        final users =
+                                            state.following
+                                                .map(
+                                                  (e) =>
+                                                      ProfileModel.fromJson(e),
+                                                )
+                                                .toList();
+                                        return FollowersFollowingListPage(
+                                          title: 'Following',
+                                          users: users,
+                                        );
+                                      } else if (state is ProfileLoading) {
+                                        return const Scaffold(
+                                          body: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      } else if (state is ProfileError) {
+                                        return Scaffold(
+                                          body: Center(
+                                            child: Text(
+                                              'Error: \\${state.message}',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return const Scaffold(
+                                        body: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
                       if (state is ProfileLoading)
                         Positioned.fill(
                           child: Container(

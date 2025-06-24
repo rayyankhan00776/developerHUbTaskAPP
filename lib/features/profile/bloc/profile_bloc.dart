@@ -1,7 +1,7 @@
 import 'dart:io';
+import 'package:client/features/profile/models/profile_model.dart';
 import 'package:client/features/profile/repository/profile_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/profile_model.dart';
 
 // Events
 abstract class ProfileEvent {}
@@ -40,6 +40,27 @@ class LoadCommentsEvent extends ProfileEvent {
 }
 
 class RefreshProfileEvent extends ProfileEvent {}
+
+class LoadFollowersEvent extends ProfileEvent {}
+
+class LoadFollowingEvent extends ProfileEvent {}
+
+class FollowUserEvent extends ProfileEvent {
+  final String userId;
+  FollowUserEvent(this.userId);
+}
+
+class DeletePostEvent extends ProfileEvent {
+  final String postId;
+  DeletePostEvent(this.postId);
+}
+
+class UpdatePostEvent extends ProfileEvent {
+  final String postId;
+  final String? content;
+  final String? mediaUrl;
+  UpdatePostEvent({required this.postId, this.content, this.mediaUrl});
+}
 
 // States
 abstract class ProfileState {}
@@ -93,6 +114,22 @@ class CommentsLoaded extends ProfileState {
   CommentsLoaded(this.postId, this.comments);
 }
 
+class FollowersLoaded extends ProfileState {
+  final List<Map<String, dynamic>> followers;
+  FollowersLoaded(this.followers);
+}
+
+class FollowingLoaded extends ProfileState {
+  final List<Map<String, dynamic>> following;
+  FollowingLoaded(this.following);
+}
+
+class FollowUserSuccess extends ProfileState {
+  final String userId;
+  final bool following;
+  FollowUserSuccess(this.userId, this.following);
+}
+
 // BLoC
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ProfileRepository repository;
@@ -109,6 +146,35 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<AddCommentEvent>(_onAddComment);
     on<LoadCommentsEvent>(_onLoadComments);
     on<RefreshProfileEvent>(_onRefreshProfile);
+    on<LoadFollowersEvent>((event, emit) async {
+      try {
+        emit(ProfileLoading());
+        final followers = await repository.getFollowers();
+        emit(FollowersLoaded(followers));
+      } catch (e) {
+        emit(ProfileError(e.toString()));
+      }
+    });
+    on<LoadFollowingEvent>((event, emit) async {
+      try {
+        emit(ProfileLoading());
+        final following = await repository.getFollowing();
+        emit(FollowingLoaded(following));
+      } catch (e) {
+        emit(ProfileError(e.toString()));
+      }
+    });
+    on<FollowUserEvent>((event, emit) async {
+      try {
+        emit(ProfileLoading());
+        final following = await repository.followUser(event.userId);
+        emit(FollowUserSuccess(event.userId, following));
+      } catch (e) {
+        emit(ProfileError(e.toString()));
+      }
+    });
+    on<DeletePostEvent>(_onDeletePost);
+    on<UpdatePostEvent>(_onUpdatePost);
   }
 
   Future<void> _onLoadProfile(
@@ -221,62 +287,33 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       final currentPost = _userPosts.firstWhere(
         (post) => post.id == event.postId,
       );
+      final wasLiked = currentPost.likedByUser;
+      final originalLikes = currentPost.totalLikes;
 
-      // Optimistically update UI
-      _userPosts =
-          _userPosts.map((post) {
-            if (post.id == event.postId) {
-              return post.copyWith(
-                likedByUser: !post.likedByUser,
-                totalLikes:
-                    post.likedByUser
-                        ? post.totalLikes - 1
-                        : post.totalLikes + 1,
-              );
-            }
-            return post;
-          }).toList();
-
-      _currentProfile = _currentProfile?.copyWith(posts: _userPosts);
-      emit(PostLiked(event.postId, !currentPost.likedByUser));
-
-      // Make API call
+      // Make API call and get new like state
       final isLiked = await repository.likePost(event.postId);
 
-      // Update with server response
+      // Only update if the like state actually changed
+      int newLikes = originalLikes;
+      if (wasLiked != isLiked) {
+        newLikes =
+            isLiked
+                ? originalLikes + 1
+                : (originalLikes > 0 ? originalLikes - 1 : 0);
+      }
+
       _userPosts =
           _userPosts.map((post) {
             if (post.id == event.postId) {
-              return post.copyWith(
-                likedByUser: isLiked,
-                totalLikes:
-                    isLiked
-                        ? currentPost.totalLikes + 1
-                        : currentPost.totalLikes - 1,
-              );
+              return post.copyWith(likedByUser: isLiked, totalLikes: newLikes);
             }
             return post;
           }).toList();
 
       _currentProfile = _currentProfile?.copyWith(posts: _userPosts);
-
       emit(ProfileLoaded(_currentProfile!));
       emit(PostLiked(event.postId, isLiked));
     } catch (e) {
-      // Revert to original state on error
-      _userPosts =
-          _userPosts.map((post) {
-            if (post.id == event.postId) {
-              return post.copyWith(
-                likedByUser: post.likedByUser,
-                totalLikes: post.totalLikes,
-              );
-            }
-            return post;
-          }).toList();
-
-      _currentProfile = _currentProfile?.copyWith(posts: _userPosts);
-      emit(ProfileLoaded(_currentProfile!));
       emit(ProfileError(e.toString()));
     }
   }
@@ -350,6 +387,69 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(ProfileLoaded(profile));
     } catch (e) {
       emit(ProfileError(e.toString()));
+    }
+  }
+
+  Future<void> _onDeletePost(
+    DeletePostEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    if (state is ProfileLoaded) {
+      final currentState = state as ProfileLoaded;
+      try {
+        await repository.deletePost(event.postId);
+        final updatedPosts = List<Post>.from(currentState.profile.posts)
+          ..removeWhere((p) => p.id == event.postId);
+        final updatedProfile = ProfileModel(
+          id: currentState.profile.id,
+          name: currentState.profile.name,
+          email: currentState.profile.email,
+          profilePicUrl: currentState.profile.profilePicUrl,
+          posts: updatedPosts,
+          followersCount: currentState.profile.followersCount,
+          followingCount: currentState.profile.followingCount,
+        );
+        emit(ProfileLoaded(updatedProfile));
+      } catch (e) {
+        emit(ProfileError(e.toString()));
+        emit(currentState);
+      }
+    }
+  }
+
+  Future<void> _onUpdatePost(
+    UpdatePostEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    if (state is ProfileLoaded) {
+      final currentState = state as ProfileLoaded;
+      try {
+        final updatedPost = await repository.updatePost(
+          postId: event.postId,
+          content: event.content,
+          mediaUrl: event.mediaUrl,
+        );
+        final updatedPosts =
+            currentState.profile.posts.map((p) {
+              if (p.id == event.postId) {
+                return updatedPost;
+              }
+              return p;
+            }).toList();
+        final updatedProfile = ProfileModel(
+          id: currentState.profile.id,
+          name: currentState.profile.name,
+          email: currentState.profile.email,
+          profilePicUrl: currentState.profile.profilePicUrl,
+          posts: updatedPosts,
+          followersCount: currentState.profile.followersCount,
+          followingCount: currentState.profile.followingCount,
+        );
+        emit(ProfileLoaded(updatedProfile));
+      } catch (e) {
+        emit(ProfileError(e.toString()));
+        emit(currentState);
+      }
     }
   }
 

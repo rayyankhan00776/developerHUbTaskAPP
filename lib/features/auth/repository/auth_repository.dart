@@ -77,4 +77,36 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
   }
+
+  Future<void> forgotPasswordSendCode(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/forgot-password/send-code'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+    final body = jsonDecode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(body['detail'] ?? 'Failed to send reset code');
+    }
+  }
+
+  Future<void> forgotPasswordVerifyCode(
+    String email,
+    String code,
+    String newPassword,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/forgot-password/verify-code'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'code': code,
+        'new_password': newPassword,
+      }),
+    );
+    final body = jsonDecode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(body['detail'] ?? 'Failed to reset password');
+    }
+  }
 }
