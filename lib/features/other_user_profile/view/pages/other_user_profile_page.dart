@@ -6,7 +6,6 @@ import '../../bloc/other_user_profile_bloc.dart';
 import '../../repository/other_user_profile_repository.dart';
 import '../widgets/other_user_profile_header_widget.dart';
 import '../widgets/other_user_profile_post_widget.dart';
-import '../../models/other_user_profile_model.dart';
 import 'package:client/core/constants/api.dart';
 
 class OtherUserProfilePage extends StatelessWidget {

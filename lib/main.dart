@@ -8,6 +8,9 @@ import 'package:client/features/dashboard/repositories/feed_repository.dart';
 import 'package:client/features/dashboard/bloc/feed_bloc.dart';
 import 'package:client/features/profile/repository/profile_repository.dart';
 import 'package:client/features/profile/bloc/profile_bloc.dart';
+import 'package:client/features/dashboard/bloc/notification_bloc.dart';
+import 'package:client/features/dashboard/repositories/notification_repository.dart';
+import 'package:client/core/constants/api.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +25,10 @@ void main() {
         BlocProvider(create: (_) => AuthBloc(authRepository)),
         BlocProvider(create: (_) => FeedBloc(repository: feedRepository)),
         BlocProvider(create: (_) => ProfileBloc(repository: profileRepository)),
+        BlocProvider(
+          create:
+              (_) => NotificationBloc(NotificationRepository(baseUrl: baseUrl)),
+        ),
       ],
       child: const MyApp(),
     ),
